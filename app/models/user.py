@@ -17,20 +17,6 @@ class User(BaseModel):
                 "Name": "시로가네 노엘",
                 "Nickname": "카난",
                 "Emailaddr": "canan8181@gmail.com",
-                "password": "SuperPowerfulPW",
-            }
-        }
-
-
-class Team(BaseModel):
-    id: int = Field(default=None)
-    Name: str = Field(...)
-    Owner: int = Field(...)
-    ProfilePic: str = Field(...)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "Name": "홀로라이브",
+                "Password": "SuperPowerfulPW",
             }
         }
