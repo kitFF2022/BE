@@ -117,20 +117,23 @@ class DB:
         if DB._connectDB(self):
             dbUser = DB._getUser(self, user)
             if dbUser[0]:
-                if dbUser[1][5] == user.Password:
-                    return True
+                if dbUser[1] == None:
+                    return 2
                 else:
-                    return False
+                    if dbUser[1][5] == user.Password:
+                        return 1
+                    else:
+                        return 2
             else:
-                return False
+                return 3
         else:
-            return False
+            return 4
 
     def signupUser(self, user: User):
         if DB._connectDB(self):
             if self._addUser(user):
-                return True
+                return 1
             else:
-                return False
+                return 2
         else:
-            return False
+            return 3

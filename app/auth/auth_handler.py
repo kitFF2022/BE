@@ -30,4 +30,4 @@ def decodeJWT(token: str):
             token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return decoded_token
     except:
-        return {}
+        return None

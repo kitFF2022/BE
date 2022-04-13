@@ -1,10 +1,14 @@
-from fastapi import FastAPI, status, Body
+from os import access
+from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from app.auth.auth_bearer import JWTBearer
 from app.db import DB
 from app.models.user import User, UserSignIn
 from app.models.exModels import resMess, resSignin
-from app.auth.auth_handler import signJWT
+from app.auth.auth_handler import signJWT, decodeJWT
+from typing import Optional
+import shutil
 
 app = FastAPI(debug=False)
 mydb = DB()
@@ -33,32 +37,54 @@ async def read_root() -> dict:
 
 @app.post("/user/signin", tags=["user"], response_model=resSignin)
 async def user_signin(user: UserSignIn = Body(...)):
-    if mydb.signinUser(user):
+    res = mydb.signinUser(user)
+    if res == 1:
         return signJWT(user.Emailaddr)
-    else:
+    elif res == 2:
         item = {
-            "error": "Signin Failed"
+            "message": "Signin Failed"
         }
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED)
+    else:
+        item = {
+            "message": "DB might be dead T.T"
+        }
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
 @app.post("/user/signup", tags=["user"], response_model=resMess)
 async def user_signup(user: User = Body(...)):
-    if mydb.signupUser(user):
+    res = mydb.signupUser(user)
+    if res == 1:
         item = {
-            "message": "signup success"
+            "message": "Signup Success"
         }
         return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    elif res == 2:
+        item = {
+            "message": "That Emailaddr already exist"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
     else:
         item = {
-            "message": "signup failed - > might be duplicated Emailaddr"
+            "message": "DB might be dead T.T"
         }
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=item)
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
-    # if mydb.signupUser(user):
-    #    return JSONResponse(status_code=status.HTTP_200_OK)
-    # else:
-    #    return JSONResponse(status_code=status.HTTP_401)
+
+@app.post("/user/profilePic", dependencies=[Depends(JWTBearer())], tags=["user"])
+async def user_profilePic(file: UploadFile, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    f = open("c:/profilepic/" + file.filename, 'wb')
+    print(file.filename)
+    shutil.copyfileobj(file.file, f)
+    f.close()
+    print(decoded["Emailaddr"])
+    item = {
+        "message": "file uploaded but not committed to DB"
+    }
+    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
 
 
 @app.get("/TEST/DB/DROPTABLE", tags=["TEST"], response_model=resMess)
@@ -70,6 +96,6 @@ async def test_DropTable():
         return JSONResponse(status_code=status.HTTP_200_OK, content=item)
     else:
         item = {
-            "message": "internal server error"
+            "message": "Internal server error"
         }
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
