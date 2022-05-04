@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from app.auth.auth_bearer import JWTBearer
 from app.db import DB
 from app.models.user import User, UserSignIn
-from app.models.exModels import resMess, resSignin
+from app.models.exModels import resMess, resSignin, resUser
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
 import shutil
@@ -83,6 +83,17 @@ async def user_profilePic(file: UploadFile, Authorization: Optional[str] = Heade
     print(decoded["Emailaddr"])
     item = {
         "message": "file uploaded but not committed to DB"
+    }
+    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+
+@app.get("/user/userData", dependencies=[Depends(JWTBearer())], tags=["user"], response_model=resUser)
+async def user_getUserData(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbUser = mydb.getUserData(decoded["Emailaddr"])
+    #dbUser 확인하여 에러 처리 필요
+    item = {
+        "message": dbUser
     }
     return JSONResponse(status_code=status.HTTP_200_OK, content=item)
 

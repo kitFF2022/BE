@@ -66,7 +66,7 @@ class DB:
     def _connectDB(self):
         try:
             DB._conn = pymysql.connect(
-                host='localhost', user='FarmFactory', password='Nekarakube!1', db='FFDB', charset='utf8mb4')
+                host='mmyu.direct.quickconnect.to', user='FarmFactory', password='Yuzuha2090!', db='FFDB', charset='utf8mb4')
         except pymysql.err.OperationalError:
             print("\033[31m" + "DB  " + "\033[0m", end=':     ')
             print("DB CONNECTION FAILED !!!")
@@ -112,6 +112,34 @@ class DB:
             return True, row
         else:
             return False, None
+
+    def _getUserByEmail(self, user: str):
+        if DB._conn.open:
+            DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user + "'"
+            DB._cur.execute(DB._sql)
+            row = DB._cur.fetchone()
+            return True, row
+        else:
+            return False, None
+
+    def getUserData(self, user: str):
+        if DB._connectDB(self):
+            dbUser = DB._getUserByEmail(self, user)
+            if dbUser[0]:
+                if dbUser[1] == None:
+                    return None
+                else:
+                    ProfilePic = True
+                    if dbUser[1][6] == None:
+                        ProfilePic = False
+                    dbUser = {
+                        "Name": dbUser[1][1],
+                        "Team": dbUser[1][2],
+                        "Nickname": dbUser[1][3],
+                        "Emailaddr": dbUser[1][4],
+                        "ProfilePic": str(ProfilePic),
+                    }
+                    return dbUser
 
     def signinUser(self, user: UserSignIn):
         if DB._connectDB(self):

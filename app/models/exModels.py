@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class resMess(BaseModel):
@@ -7,3 +7,15 @@ class resMess(BaseModel):
 
 class resSignin(BaseModel):
     access_token: str
+
+class resUserData(BaseModel):
+    Name: str
+    Team: str
+    Nickname: str
+    Emailaddr: EmailStr
+    ProfilePic: str
+
+class resUser(BaseModel):
+    message: resUserData
+
+
