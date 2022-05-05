@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.auth.auth_bearer import JWTBearer
 from app.db import DB
-from app.models.user import User, UserSignIn
+from app.models.user import User, UserSignIn, UserUpdate
 from app.models.exModels import resMess, resSignin, resUser
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
@@ -77,10 +77,10 @@ async def user_profilePic(file: UploadFile, Authorization: Optional[str] = Heade
     token = Authorization[7:]
     decoded = decodeJWT(token)
     f = open("./imgs/" + file.filename, 'wb')
-    print(file.filename)
+    #print(file.filename)
     shutil.copyfileobj(file.file, f)
     f.close()
-    print(decoded["Emailaddr"])
+    #print(decoded["Emailaddr"])
     item = {
         "message": "file uploaded but not committed to DB"
     }
@@ -96,6 +96,21 @@ async def user_getUserData(Authorization: Optional[str] = Header(None)):
         "message": dbUser
     }
     return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+
+@app.put("/user/update", dependencies=[Depends(JWTBearer())], tags=["user"], response_model=resMess)
+async def user_update(Authorization: Optional[str] = Header(None), user: UserUpdate = Body(...)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    if mydb.updateUser(user, decoded["Emailaddr"]) == 1:
+        item = {
+            "message": "Update Success"
+        }
+        return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    else:
+        item = {
+            "message": "not managed err"
+        }
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
 @app.get("/TEST/DB/DROPTABLE", tags=["TEST"], response_model=resMess)

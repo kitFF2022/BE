@@ -1,5 +1,5 @@
 import pymysql
-from app.models.user import User, UserSignIn
+from app.models.user import User, UserSignIn, UserUpdate
 
 
 class DB:
@@ -97,6 +97,33 @@ class DB:
                     "', '" + user.Nickname + "', '" + user.Emailaddr + "', '" + user.Password + "')"
                 DB._cur.execute(DB._sql)
                 DB._conn.commit()
+                DB._conn.close()
+            except pymysql.err.IntegrityError:
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    def _updateUser(self, user: UserUpdate, Emailaddr: str):
+        if DB._conn.open:
+            try:
+                sqlstr = "UPDATE User SET"
+                if user.Name is not None:
+                    sqlstr = sqlstr + " Name = '"  + user.Name + "',"
+                if user.Team is not None:
+                    sqlstr = sqlstr + " Team = '"  + user.Team + "',"
+                if user.Nickname is not None:
+                    sqlstr = sqlstr + " Nickname = '"  + user.Nickname + "',"
+                if user.Password is not None:
+                    sqlstr = sqlstr + " Password = '"  + user.Password + "',"
+                if sqlstr[-1] == ',':
+                    sqlstr = sqlstr[:-1]
+                sqlstr = sqlstr + " WHERE Emailaddr = '" + Emailaddr + "'"
+                DB._sql = sqlstr
+                DB._cur.execute(DB._sql)
+                DB._conn.commit()
+                DB._conn.close()
             except pymysql.err.IntegrityError:
                 return False
             else:
@@ -109,6 +136,7 @@ class DB:
             DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user.Emailaddr + "'"
             DB._cur.execute(DB._sql)
             row = DB._cur.fetchone()
+            DB._conn.close()
             return True, row
         else:
             return False, None
@@ -118,6 +146,7 @@ class DB:
             DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user + "'"
             DB._cur.execute(DB._sql)
             row = DB._cur.fetchone()
+            DB._conn.close()
             return True, row
         else:
             return False, None
@@ -160,6 +189,15 @@ class DB:
     def signupUser(self, user: User):
         if DB._connectDB(self):
             if self._addUser(user):
+                return 1
+            else:
+                return 2
+        else:
+            return 3
+
+    def updateUser(self, user: UserUpdate, Emailaddr: str):
+        if DB._connectDB(self):
+            if self._updateUser(user, Emailaddr):
                 return 1
             else:
                 return 2
