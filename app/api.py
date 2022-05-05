@@ -76,7 +76,7 @@ async def user_signup(user: User = Body(...)):
 async def user_profilePic(file: UploadFile, Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
-    f = open("c:/profilepic/" + file.filename, 'wb')
+    f = open("./imgs/" + file.filename, 'wb')
     print(file.filename)
     shutil.copyfileobj(file.file, f)
     f.close()
