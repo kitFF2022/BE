@@ -1,7 +1,7 @@
 from os import access
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from app.auth.auth_bearer import JWTBearer
 from app.db import DB
 from app.models.user import User, UserSignIn, UserUpdate
@@ -24,7 +24,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=['GET', 'POST', "DELETE", 'OPTIONS'],
+    allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allow_headers=['*'],
 )
 
@@ -73,18 +73,41 @@ async def user_signup(user: User = Body(...)):
 
 
 @app.post("/user/profilePic", dependencies=[Depends(JWTBearer())], tags=["user"])
-async def user_profilePic(file: UploadFile, Authorization: Optional[str] = Header(None)):
+async def user_PostProfilePic(file: UploadFile, Authorization: Optional[str] = Header(None)):
+    ext = ["jpg", "JPG", "PNG", "png"]
     token = Authorization[7:]
     decoded = decodeJWT(token)
-    f = open("./imgs/" + file.filename, 'wb')
-    #print(file.filename)
-    shutil.copyfileobj(file.file, f)
-    f.close()
-    #print(decoded["Emailaddr"])
-    item = {
-        "message": "file uploaded but not committed to DB"
-    }
-    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    filename = file.filename.split('.')
+    if filename[len(filename) - 1] in ext:
+        filename = decoded["Emailaddr"] + "." + filename[len(filename) - 1]
+        f = open("./imgs/" + filename, 'wb')
+        shutil.copyfileobj(file.file, f)
+        f.close()
+        mydb.updateUserProfilePic(filename, decoded["Emailaddr"])
+        item = {
+            "message": "file uploaded"
+        }
+        return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    else:
+        item = {
+            "message": "profilePic must .jpg or .png"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+
+@app.get("/user/profilePic", dependencies=[Depends(JWTBearer())], tags=["user"])
+async def user_getProfilePic(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbUser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbUser["ProfilePic"] is None:
+        item = {
+            "message": "there is no ProfilePic for User"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        path = "./imgs/" + dbUser["ProfilePic"]
+        return FileResponse(path=path, filename=dbUser["ProfilePic"])
+    return
 
 @app.get("/user/userData", dependencies=[Depends(JWTBearer())], tags=["user"], response_model=resUser)
 async def user_getUserData(Authorization: Optional[str] = Header(None)):

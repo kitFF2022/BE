@@ -131,6 +131,19 @@ class DB:
         else:
             return False
 
+    def _updateUserProfilePic(self, filename: str, Emailaddr: str):
+        if DB._conn.open:
+            try:
+                DB._sql = "UPDATE User SET ProfilePic = '" + filename + "' WHERE Emailaddr = '" + Emailaddr + "'"
+                DB._cur.execute(DB._sql)
+                DB._conn.commit()
+                DB._conn.close()
+            except pymysql.err.IntegrityError:
+                return False
+            else:
+                return True
+        else:
+            return False
     def _getUser(self, user: UserSignIn):
         if DB._conn.open:
             DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user.Emailaddr + "'"
@@ -170,6 +183,22 @@ class DB:
                     }
                     return dbUser
 
+    def getDBUserData(self, user: str):
+        if DB._connectDB(self):
+            dbUser = DB._getUserByEmail(self, user)
+            if dbUser[0]:
+                if dbUser[1] == None:
+                    return None
+                else:
+                    dbUser = {
+                        "Name": dbUser[1][1],
+                        "Team": dbUser[1][2],
+                        "Nickname": dbUser[1][3],
+                        "Emailaddr": dbUser[1][4],
+                        "ProfilePic": dbUser[1][6],
+                    }
+                    return dbUser
+
     def signinUser(self, user: UserSignIn):
         if DB._connectDB(self):
             dbUser = DB._getUser(self, user)
@@ -198,6 +227,15 @@ class DB:
     def updateUser(self, user: UserUpdate, Emailaddr: str):
         if DB._connectDB(self):
             if self._updateUser(user, Emailaddr):
+                return 1
+            else:
+                return 2
+        else:
+            return 3
+
+    def updateUserProfilePic(self, Filename: str, Emailaddr: str ):
+        if DB._connectDB(self):
+            if self._updateUserProfilePic(Filename, Emailaddr):
                 return 1
             else:
                 return 2
