@@ -2,10 +2,11 @@ from email.policy import default
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 
+
 class User(BaseModel):
     id: int = Field(default=None)
     Name: str = Field(...)
-    Team: str = Field(default=None)
+    Team: int = Field(default=None)
     Nickname: str = Field(...)
     Emailaddr: EmailStr = Field(...)
     Password: str = Field(...)
@@ -21,10 +22,11 @@ class User(BaseModel):
             }
         }
 
+
 class UserUpdate(BaseModel):
     id: int = Field(default=None)
     Name: Optional[str]
-    Team: Optional[str]
+    Team: Optional[int]
     Nickname: Optional[str]
     Password: Optional[str]
     ProfilePic: str = Field(default=None)
@@ -51,4 +53,3 @@ class UserSignIn(BaseModel):
                 "Password": "SuperPowerfulPW",
             }
         }
-

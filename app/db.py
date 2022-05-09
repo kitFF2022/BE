@@ -1,5 +1,7 @@
+from pydantic import EmailStr
 import pymysql
 from app.models.user import User, UserSignIn, UserUpdate
+from app.models.team import Team
 
 
 class DB:
@@ -110,13 +112,13 @@ class DB:
             try:
                 sqlstr = "UPDATE User SET"
                 if user.Name is not None:
-                    sqlstr = sqlstr + " Name = '"  + user.Name + "',"
+                    sqlstr = sqlstr + " Name = '" + user.Name + "',"
                 if user.Team is not None:
-                    sqlstr = sqlstr + " Team = '"  + user.Team + "',"
+                    sqlstr = sqlstr + " Team = '" + user.Team + "',"
                 if user.Nickname is not None:
-                    sqlstr = sqlstr + " Nickname = '"  + user.Nickname + "',"
+                    sqlstr = sqlstr + " Nickname = '" + user.Nickname + "',"
                 if user.Password is not None:
-                    sqlstr = sqlstr + " Password = '"  + user.Password + "',"
+                    sqlstr = sqlstr + " Password = '" + user.Password + "',"
                 if sqlstr[-1] == ',':
                     sqlstr = sqlstr[:-1]
                 sqlstr = sqlstr + " WHERE Emailaddr = '" + Emailaddr + "'"
@@ -134,7 +136,8 @@ class DB:
     def _updateUserProfilePic(self, filename: str, Emailaddr: str):
         if DB._conn.open:
             try:
-                DB._sql = "UPDATE User SET ProfilePic = '" + filename + "' WHERE Emailaddr = '" + Emailaddr + "'"
+                DB._sql = "UPDATE User SET ProfilePic = '" + \
+                    filename + "' WHERE Emailaddr = '" + Emailaddr + "'"
                 DB._cur.execute(DB._sql)
                 DB._conn.commit()
                 DB._conn.close()
@@ -144,6 +147,21 @@ class DB:
                 return True
         else:
             return False
+
+    def _removeUserProfilePic(self, Emailaddr: str):
+        if DB._conn.open:
+            try:
+                DB._sql = "UPDATE User SET ProfilePic = NULL WHERE Emailaddr = '" + Emailaddr + "'"
+                DB._cur.execute(DB._sql)
+                DB._conn.commit()
+                DB._conn.close()
+            except pymysql.err.IntegrityError:
+                return False
+            else:
+                return True
+        else:
+            return False
+
     def _getUser(self, user: UserSignIn):
         if DB._conn.open:
             DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user.Emailaddr + "'"
@@ -163,6 +181,48 @@ class DB:
             return True, row
         else:
             return False, None
+
+    def _getUserById(self, userId: int):
+        if DB._conn.open:
+            DB._sql = "SELECT * FROM User WHERE id=" + str(userId)
+            DB._cur.execute(DB._sql)
+            row = DB._cur.fetchone()
+            DB._conn.close()
+            return True, row
+        else:
+            return False, None
+
+    def _createTeam(self, team: Team, ownerId: int):
+        if DB._conn.open:
+            DB._sql = "INSERT INTO Team(Name, Owner) VALUES('" + \
+                team.Name + "', '" + str(ownerId) + "')"
+            DB._cur.execute(DB._sql)
+            DB._conn.commit()
+            DB._conn.close()
+            return True
+        else:
+            return False
+
+    def _getTeam(self, ownerId: int):
+        if DB._conn.open:
+            DB._sql = "SELECT * FROM Team WHERE Owner='" + str(ownerId) + "'"
+            DB._cur.execute(DB._sql)
+            row = DB._cur.fetchone()
+            DB._conn.close()
+            return row
+        else:
+            return None
+
+    def _updateOwnerTeam(self, userId: int, teamId: int):
+        if DB._conn.open:
+            DB._sql = "UPDATE User SET Team = " + \
+                str(teamId) + " WHERE id = " + str(userId)
+            DB._cur.execute(DB._sql)
+            DB._conn.commit()
+            DB._conn.close()
+            return True
+        else:
+            return False
 
     def getUserData(self, user: str):
         if DB._connectDB(self):
@@ -191,6 +251,24 @@ class DB:
                     return None
                 else:
                     dbUser = {
+                        "id": dbUser[1][0],
+                        "Name": dbUser[1][1],
+                        "Team": dbUser[1][2],
+                        "Nickname": dbUser[1][3],
+                        "Emailaddr": dbUser[1][4],
+                        "ProfilePic": dbUser[1][6],
+                    }
+                    return dbUser
+
+    def getDBUserDatabyId(self, user: int):
+        if DB._connectDB(self):
+            dbUser = DB._getUserById(self, user)
+            if dbUser[0]:
+                if dbUser[1] == None:
+                    return None
+                else:
+                    dbUser = {
+                        "id": dbUser[1][0],
                         "Name": dbUser[1][1],
                         "Team": dbUser[1][2],
                         "Nickname": dbUser[1][3],
@@ -233,11 +311,50 @@ class DB:
         else:
             return 3
 
-    def updateUserProfilePic(self, Filename: str, Emailaddr: str ):
+    def updateUserProfilePic(self, Filename: str, Emailaddr: str):
         if DB._connectDB(self):
-            if self._updateUserProfilePic(Filename, Emailaddr):
-                return 1
+            if Filename == "NULL":
+                if self._removeUserProfilePic(Emailaddr):
+                    return 1
+                else:
+                    return 2
             else:
-                return 2
+                if self._updateUserProfilePic(Filename, Emailaddr):
+                    return 1
+                else:
+                    return 2
         else:
             return 3
+
+    def createTeam(self, team: Team, ownerID: int):
+        if DB._connectDB(self):
+            return self._createTeam(team, ownerID)
+        else:
+            return False
+
+    def updateOwnerTeam(self, ownerId: int):
+        if DB._connectDB(self):
+            teamId = self._getTeam(ownerId)[0]
+            if DB._connectDB(self):
+                return self._updateOwnerTeam(ownerId, teamId)
+            else:
+                return False
+        else:
+            return False
+
+    def getTeam(self, userId: int):
+        if DB._connectDB(self):
+            team = self._getTeam(userId)
+            if DB._connectDB(self):
+                owner = self.getDBUserDatabyId(userId)
+                profilePic = False
+                if team[3] is not None:
+                    profilePic = True
+                team = {
+                    "Name": team[1],
+                    "Owner": owner["Name"],
+                    "ProfilePic": str(profilePic)
+                }
+            return team
+        else:
+            return None
