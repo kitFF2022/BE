@@ -195,8 +195,13 @@ async def team_getTeam(Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
-    dbteam = mydb.getTeam(dbuser["id"])
+    dbteam = mydb.getTeambyId(dbuser["Team"])
     if dbteam is not None:
+        dbteam = {
+            "Name": dbteam["Name"],
+            "Owner": dbuser["Name"],
+            "ProfilePic": str(True) if dbteam["ProfilePic"] is not None else str(False)
+        }
         item = {
             "message": dbteam
         }
@@ -212,13 +217,15 @@ async def team_postTeam(Authorization: Optional[str] = Header(None), team: Team 
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    team.Owner = dbuser["id"]
     if dbuser["Team"] is not None:
         item = {
             "message": "you have team already"
         }
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
-    if mydb.createTeam(team, dbuser["id"]):
-        if mydb.updateOwnerTeam(dbuser["id"]):
+    if mydb.createTeam(team):
+        dbteam = mydb.getTeambyOwnerId(dbuser["id"])
+        if mydb.updateUserTeam(dbuser["id"], dbteam["id"]):
             item = {
                 "message": "Team created you are owner of the team"
             }

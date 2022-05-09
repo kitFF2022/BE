@@ -22,52 +22,52 @@ class DB:
     def __init__(self):
         print("\033[32m" + "DB  " + "\033[0m", end=':     ')
         print("DB initiation started")
-        if DB._connectDB(self):
-            DB._createTable(self)
+        if self._connectDB():
+            self._createTable()
             print("\033[32m" + "DB  " + "\033[0m", end=':     ')
             print("DB connection confirmed")
 
     def __del__(self):
-        if DB._conn.open:
-            DB._conn.close()
+        if self._conn.open:
+            self._conn.close()
 
     def _createTable(self):
-        DB._sql = "CREATE TABLE IF NOT EXISTS User(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Team char(30), Nickname char(30), Emailaddr char(30) UNIQUE, Password char(30), ProfilePic char(125), PRIMARY KEY (id))"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "CREATE TABLE IF NOT EXISTS Team(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, ProfilePic char(255), PRIMARY KEY (id))"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "CREATE TABLE IF NOT EXISTS Project(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, Data char(255), ProfilePic char(255), PRIMARY KEY (id))"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "CREATE TABLE IF NOT EXISTS Object(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, Data char(255), ProfilePic char(255), PRIMARY KEY (id))"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._conn.close()
+        self._sql = "CREATE TABLE IF NOT EXISTS User(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Team char(30), Nickname char(30), Emailaddr char(30) UNIQUE, Password char(30), ProfilePic char(125), PRIMARY KEY (id))"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "CREATE TABLE IF NOT EXISTS Team(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, ProfilePic char(255), PRIMARY KEY (id), FOREIGN KEY (Owner) REFERENCES User(id))"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "CREATE TABLE IF NOT EXISTS Project(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, Data char(255), ProfilePic char(255), PRIMARY KEY (id))"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "CREATE TABLE IF NOT EXISTS Object(id int NOT NULL AUTO_INCREMENT UNIQUE, Name char(30), Owner int, Data char(255), ProfilePic char(255), PRIMARY KEY (id))"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._conn.close()
         print("\033[33m" + "DB  " + "\033[0m", end=':     ')
         print("All tables CREATED")
 
     def _dropTable(self):
-        DB._sql = "DROP TABLE User"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "DROP TABLE Team"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "DROP TABLE Project"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._sql = "DROP TABLE Object"
-        DB._cur.execute(DB._sql)
-        DB._conn.commit()
-        DB._conn.close()
+        self._sql = "DROP TABLE Object"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "DROP TABLE Project"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "DROP TABLE Team"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._sql = "DROP TABLE User"
+        self._cur.execute(self._sql)
+        self._conn.commit()
+        self._conn.close()
         print("\033[33m" + "DB  " + "\033[0m", end=':     ')
         print("All tables DROPED")
 
     def _connectDB(self):
         try:
-            DB._conn = pymysql.connect(
+            self._conn = pymysql.connect(
                 host='172.17.0.4', user='FarmFactory', password='Yuzuha2090!', db='FFDB', charset='utf8mb4')
         except pymysql.err.OperationalError:
             print("\033[31m" + "DB  " + "\033[0m", end=':     ')
@@ -76,30 +76,30 @@ class DB:
         else:
             print("\033[33m" + "DB  " + "\033[0m", end=':     ')
             print("DB CONNECTED !!!")
-            DB._cur = DB._conn.cursor()
+            self._cur = self._conn.cursor()
             return True
 
     def WarnTestDelAllTableData(self):
         i = 0
-        if DB._connectDB(self):
+        if self._connectDB():
             i = i + 1
-            DB._dropTable(self)
-        if DB._connectDB(self):
+            self._dropTable()
+        if self._connectDB():
             i = i + 1
-            DB._createTable(self)
+            self._createTable()
         if i == 2:
             return True
         else:
             return False
 
     def _addUser(self, user: User):
-        if DB._conn.open:
+        if self._conn.open:
             try:
-                DB._sql = "INSERT INTO User(Name, Nickname, Emailaddr, Password) VALUES('" + user.Name + \
+                self._sql = "INSERT INTO User(Name, Nickname, Emailaddr, Password) VALUES('" + user.Name + \
                     "', '" + user.Nickname + "', '" + user.Emailaddr + "', '" + user.Password + "')"
-                DB._cur.execute(DB._sql)
-                DB._conn.commit()
-                DB._conn.close()
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
             except pymysql.err.IntegrityError:
                 return False
             else:
@@ -108,7 +108,7 @@ class DB:
             return False
 
     def _updateUser(self, user: UserUpdate, Emailaddr: str):
-        if DB._conn.open:
+        if self._conn.open:
             try:
                 sqlstr = "UPDATE User SET"
                 if user.Name is not None:
@@ -122,10 +122,10 @@ class DB:
                 if sqlstr[-1] == ',':
                     sqlstr = sqlstr[:-1]
                 sqlstr = sqlstr + " WHERE Emailaddr = '" + Emailaddr + "'"
-                DB._sql = sqlstr
-                DB._cur.execute(DB._sql)
-                DB._conn.commit()
-                DB._conn.close()
+                self._sql = sqlstr
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
             except pymysql.err.IntegrityError:
                 return False
             else:
@@ -134,13 +134,13 @@ class DB:
             return False
 
     def _updateUserProfilePic(self, filename: str, Emailaddr: str):
-        if DB._conn.open:
+        if self._conn.open:
             try:
-                DB._sql = "UPDATE User SET ProfilePic = '" + \
+                self._sql = "UPDATE User SET ProfilePic = '" + \
                     filename + "' WHERE Emailaddr = '" + Emailaddr + "'"
-                DB._cur.execute(DB._sql)
-                DB._conn.commit()
-                DB._conn.close()
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
             except pymysql.err.IntegrityError:
                 return False
             else:
@@ -149,12 +149,12 @@ class DB:
             return False
 
     def _removeUserProfilePic(self, Emailaddr: str):
-        if DB._conn.open:
+        if self._conn.open:
             try:
-                DB._sql = "UPDATE User SET ProfilePic = NULL WHERE Emailaddr = '" + Emailaddr + "'"
-                DB._cur.execute(DB._sql)
-                DB._conn.commit()
-                DB._conn.close()
+                self._sql = "UPDATE User SET ProfilePic = NULL WHERE Emailaddr = '" + Emailaddr + "'"
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
             except pymysql.err.IntegrityError:
                 return False
             else:
@@ -163,70 +163,80 @@ class DB:
             return False
 
     def _getUser(self, user: UserSignIn):
-        if DB._conn.open:
-            DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user.Emailaddr + "'"
-            DB._cur.execute(DB._sql)
-            row = DB._cur.fetchone()
-            DB._conn.close()
+        if self._conn.open:
+            self._sql = "SELECT * FROM User WHERE Emailaddr='" + user.Emailaddr + "'"
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
             return True, row
         else:
             return False, None
 
     def _getUserByEmail(self, user: str):
-        if DB._conn.open:
-            DB._sql = "SELECT * FROM User WHERE Emailaddr='" + user + "'"
-            DB._cur.execute(DB._sql)
-            row = DB._cur.fetchone()
-            DB._conn.close()
+        if self._conn.open:
+            self._sql = "SELECT * FROM User WHERE Emailaddr='" + user + "'"
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
             return True, row
         else:
             return False, None
 
     def _getUserById(self, userId: int):
-        if DB._conn.open:
-            DB._sql = "SELECT * FROM User WHERE id=" + str(userId)
-            DB._cur.execute(DB._sql)
-            row = DB._cur.fetchone()
-            DB._conn.close()
+        if self._conn.open:
+            self._sql = "SELECT * FROM User WHERE id=" + str(userId)
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
             return True, row
         else:
             return False, None
 
-    def _createTeam(self, team: Team, ownerId: int):
-        if DB._conn.open:
-            DB._sql = "INSERT INTO Team(Name, Owner) VALUES('" + \
-                team.Name + "', '" + str(ownerId) + "')"
-            DB._cur.execute(DB._sql)
-            DB._conn.commit()
-            DB._conn.close()
+    def _createTeam(self, team: Team):
+        if self._conn.open:
+            self._sql = "INSERT INTO Team(Name, Owner) VALUES('" + \
+                team.Name + "', " + str(team.Owner) + ")"
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
             return True
         else:
             return False
 
-    def _getTeam(self, ownerId: int):
-        if DB._conn.open:
-            DB._sql = "SELECT * FROM Team WHERE Owner='" + str(ownerId) + "'"
-            DB._cur.execute(DB._sql)
-            row = DB._cur.fetchone()
-            DB._conn.close()
+    def _getTeambyId(self, teamId: int):
+        if self._conn.open:
+            self._sql = "SELECT * FROM Team WHERE id='" + str(teamId) + "'"
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
             return row
         else:
             return None
 
-    def _updateOwnerTeam(self, userId: int, teamId: int):
-        if DB._conn.open:
-            DB._sql = "UPDATE User SET Team = " + \
+    def _getTeambyOwnerId(self, ownerId: int):
+        if self._conn.open:
+            self._sql = "SELECT * FROM Team WHERE Owner='" + str(ownerId) + "'"
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
+            return row
+        else:
+            return None
+
+    def _updateUserTeam(self, userId: int, teamId: int):
+        if self._conn.open:
+            self._sql = "UPDATE User SET Team = " + \
                 str(teamId) + " WHERE id = " + str(userId)
-            DB._cur.execute(DB._sql)
-            DB._conn.commit()
-            DB._conn.close()
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
             return True
         else:
             return False
 
     def getUserData(self, user: str):
-        if DB._connectDB(self):
-            dbUser = DB._getUserByEmail(self, user)
+        if self._connectDB():
+            dbUser = self._getUserByEmail(user)
             if dbUser[0]:
                 if dbUser[1] == None:
                     return None
@@ -244,8 +254,8 @@ class DB:
                     return dbUser
 
     def getDBUserData(self, user: str):
-        if DB._connectDB(self):
-            dbUser = DB._getUserByEmail(self, user)
+        if self._connectDB():
+            dbUser = self._getUserByEmail(user)
             if dbUser[0]:
                 if dbUser[1] == None:
                     return None
@@ -261,8 +271,8 @@ class DB:
                     return dbUser
 
     def getDBUserDatabyId(self, user: int):
-        if DB._connectDB(self):
-            dbUser = DB._getUserById(self, user)
+        if self._connectDB():
+            dbUser = self._getUserById(user)
             if dbUser[0]:
                 if dbUser[1] == None:
                     return None
@@ -278,8 +288,8 @@ class DB:
                     return dbUser
 
     def signinUser(self, user: UserSignIn):
-        if DB._connectDB(self):
-            dbUser = DB._getUser(self, user)
+        if self._connectDB():
+            dbUser = self._getUser(user)
             if dbUser[0]:
                 if dbUser[1] == None:
                     return 2
@@ -294,7 +304,7 @@ class DB:
             return 4
 
     def signupUser(self, user: User):
-        if DB._connectDB(self):
+        if self._connectDB():
             if self._addUser(user):
                 return 1
             else:
@@ -303,7 +313,7 @@ class DB:
             return 3
 
     def updateUser(self, user: UserUpdate, Emailaddr: str):
-        if DB._connectDB(self):
+        if self._connectDB():
             if self._updateUser(user, Emailaddr):
                 return 1
             else:
@@ -312,7 +322,7 @@ class DB:
             return 3
 
     def updateUserProfilePic(self, Filename: str, Emailaddr: str):
-        if DB._connectDB(self):
+        if self._connectDB():
             if Filename == "NULL":
                 if self._removeUserProfilePic(Emailaddr):
                     return 1
@@ -326,35 +336,43 @@ class DB:
         else:
             return 3
 
-    def createTeam(self, team: Team, ownerID: int):
-        if DB._connectDB(self):
-            return self._createTeam(team, ownerID)
+    def createTeam(self, team: Team):
+        if self._connectDB():
+            return self._createTeam(team)
         else:
             return False
 
-    def updateOwnerTeam(self, ownerId: int):
-        if DB._connectDB(self):
-            teamId = self._getTeam(ownerId)[0]
-            if DB._connectDB(self):
-                return self._updateOwnerTeam(ownerId, teamId)
-            else:
-                return False
+    def updateUserTeam(self, userId: int, teamId: int):
+        if self._connectDB():
+            return self._updateUserTeam(userId, teamId)
         else:
             return False
 
-    def getTeam(self, userId: int):
-        if DB._connectDB(self):
-            team = self._getTeam(userId)
-            if DB._connectDB(self):
-                owner = self.getDBUserDatabyId(userId)
-                profilePic = False
-                if team[3] is not None:
-                    profilePic = True
-                team = {
-                    "Name": team[1],
-                    "Owner": owner["Name"],
-                    "ProfilePic": str(profilePic)
-                }
+    def getTeambyOwnerId(self, ownerId):
+        if self._connectDB():
+            team = self._getTeambyOwnerId(ownerId)
+            team = {
+                "id": team[0],
+                "Name": team[1],
+                "Owner": team[2],
+                "ProfilePic": team[3]
+            }
             return team
+        else:
+            return None
+
+    def getTeambyId(self, teamId: int):
+        if self._connectDB():
+            team = self._getTeambyId(teamId)
+            if team is not None:
+                team = {
+                    "id": team[0],
+                    "Name": team[1],
+                    "Owner": team[2],
+                    "ProfilePic": team[3]
+                }
+                return team
+            else:
+                return None
         else:
             return None
