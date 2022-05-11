@@ -234,6 +234,16 @@ class DB:
         else:
             return False
 
+    def _deleteUser(self, user: EmailStr):
+        if self._conn.open:
+            self._sql = "DELETE FROM User WHERE Emailaddr = '" + user + "'"
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
     def getUserData(self, user: str):
         if self._connectDB():
             dbUser = self._getUserByEmail(user)
@@ -302,6 +312,10 @@ class DB:
                 return 3
         else:
             return 4
+
+    def deleteUser(self, user: EmailStr):
+        if self. _connectDB():
+            return self._deleteUser(user)
 
     def signupUser(self, user: User):
         if self._connectDB():

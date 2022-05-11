@@ -143,6 +143,11 @@ async def user_getUserData(Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbUser = mydb.getUserData(decoded["Emailaddr"])
+    if dbUser is None:
+        item = {
+            "message": "there is no data"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
     if dbUser["Team"] is not None:
         dbUser["Team"] = str(True)
     else:
@@ -173,6 +178,25 @@ async def user_update(Authorization: Optional[str] = Header(None), user: UserUpd
 @app.delete("/user/userData", dependencies=[Depends(JWTBearer())], tags=["user"], response_model=resMess)
 async def user_delete(Authorization: Optional[str] = Header(None), user: UserSignIn = Body(...)):
     res = mydb.signinUser(user)
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] is not None:
+        item = {
+            "message": "You need to transfer or delete your team first"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+
+    deletion = mydb.deleteUser(decoded["Emailaddr"])
+
+    if dbuser["ProfilePic"] is not None:
+        os.remove("./imgs/" + dbuser["ProfilePic"])
+
+    if not deletion:
+        item = {
+            "message": "DB might be dead T.T"
+        }
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
     if res == 1:
         item = {
             "message": "Thank you for using our service bye bye..."
