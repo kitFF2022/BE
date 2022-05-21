@@ -20,7 +20,7 @@ origins = ["172.17.0.1", "http://localhost", "http://localhost:3000",
            "https://localhost", "https://localhost:3000",
            "https://localhost:8000", "https://localhost:8080",
            "localhost", "localhost:3000",
-           "localhost:8000", "localhost:8080"]
+           "localhost:8000", "localhost:8080", "http://mmyu.direct.quickconnect.to:9930"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,7 +98,10 @@ async def user_PostProfilePic(file: UploadFile, Authorization: Optional[str] = H
     decoded = decodeJWT(token)
     dbFilename = mydb.getDBUserData(decoded["Emailaddr"])
     if dbFilename["ProfilePic"] is not None:
-        os.remove("./imgs/" + dbFilename["ProfilePic"])
+        try:
+            os.remove("./imgs/" + dbFilename["ProfilePic"])
+        except FileNotFoundError:
+            None
     filename = file.filename.split('.')
     if filename[len(filename) - 1] in ext:
         filename = decoded["Emailaddr"] + "." + filename[len(filename) - 1]
@@ -268,12 +271,55 @@ async def team_postTeam(Authorization: Optional[str] = Header(None), team: Team 
 
 @app.put("/team", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_putTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
-    return
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    dbteam = mydb.getTeambyId(dbuser["Team"])
+    if dbteam == None and dbuser["Team"] == None:
+        item = {
+            "message": "There is no Team with you"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    if dbuser["id"] == dbteam["Owner"]:
+        if mydb.updateTeam(team, dbteam["id"]):
+            item = {
+                "message": "Team updated"
+            }
+            return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+        else:
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        item = {
+            "message": "You are not owner of Team"
+        }
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=item)
 
 
 @app.delete("/team", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
-async def team_deleteTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
-    return
+async def team_deleteTeam(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    dbteam = mydb.getTeambyId(dbuser["Team"])
+    if dbteam != None:
+        if dbuser["id"] == dbteam["Owner"]:
+            if mydb.deleteTeam(dbteam["id"], dbuser["id"]):
+                item = {
+                    "message": "Team deleted"
+                }
+                return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+            else:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            item = {
+                "message": "You are not owner of Team"
+            }
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=item)
+    else:
+        item = {
+            "meaage": "Team was NULL???"
+        }
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
 @app.get("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
@@ -283,6 +329,10 @@ async def team_getProfilePic(Authorization: Optional[str] = Header(None), team: 
 
 @app.post("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_postProfilePic(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+    return
+
+@app.delete("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
+async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
     return
 
 
@@ -301,33 +351,33 @@ async def team_deleteMember(Authorization: Optional[str] = Header(None)):
     return
 
 
-@app.post("/project/create", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def team_postTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+@app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_postproject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 
-@app.put("/project/update", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def team_putTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+@app.put("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_putproject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 
-@app.delete("/project/delete", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def team_deleteTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+@app.delete("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_deleteProject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 
 @app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def team_postTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_postTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 
 @app.put("/object/update", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def team_putTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_putTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 
 @app.delete("/object/delete", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def team_deleteTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_deleteObject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
     return
 
 

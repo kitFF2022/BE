@@ -234,9 +234,40 @@ class DB:
         else:
             return False
 
+    def _updateUserTeamNone(self, userId: int):
+        if self._conn.open:
+            self._sql = "UPDATE User SET Team = NULL WHERE id = " + str(userId)
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
     def _deleteUser(self, user: EmailStr):
         if self._conn.open:
             self._sql = "DELETE FROM User WHERE Emailaddr = '" + user + "'"
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
+    def _updateTeam(self, team: Team, teamId: int):
+        if self._conn.open:
+            self._sql = "UPDATE Team SET Name = '" + \
+                team.Name + "' WHERE id = " + str(teamId)
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
+    def _deleteTeam(self, teamId: int):
+        if self._conn.open:
+            self._sql = "DELETE FROM Team WHERE id = " + str(teamId)
             self._cur.execute(self._sql)
             self._conn.commit()
             self._conn.close()
@@ -390,3 +421,20 @@ class DB:
                 return None
         else:
             return None
+
+    def updateTeam(self, team: Team, teamId: int):
+        if self._connectDB():
+            return self._updateTeam(team, teamId)
+
+    def updateUserTeamNone(self, ownerId: int):
+        if self._connectDB():
+            return self._updateUserTeamNone(ownerId)
+
+    def deleteTeam(self, teamId: int, ownerId: int):
+        if self._connectDB():
+            if self._deleteTeam(teamId):
+                return self.updateUserTeamNone(ownerId)
+            else:
+                return False
+        else:
+            return False
