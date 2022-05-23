@@ -15,6 +15,10 @@ import os
 app = FastAPI(debug=False)
 mydb = DB()
 
+baseFilePath = "./imgs/"
+userProfilePicPath = baseFilePath + "user/"
+teamProfilePicPath = baseFilePath + "team/"
+
 origins = ["172.17.0.1", "http://localhost", "http://localhost:3000",
            "http://localhost:8000", "http://localhost:8080",
            "https://localhost", "https://localhost:3000",
@@ -87,7 +91,7 @@ async def user_getProfilePic(Authorization: Optional[str] = Header(None)):
     else:
         print("\033[32m" + "FILE" + "\033[0m", end=':     ')
         print("File read -> " + dbUser["ProfilePic"])
-        path = "./imgs/" + dbUser["ProfilePic"]
+        path = userProfilePicPath + dbUser["ProfilePic"]
         return FileResponse(path=path, filename=dbUser["ProfilePic"])
 
 
@@ -99,13 +103,13 @@ async def user_PostProfilePic(file: UploadFile, Authorization: Optional[str] = H
     dbFilename = mydb.getDBUserData(decoded["Emailaddr"])
     if dbFilename["ProfilePic"] is not None:
         try:
-            os.remove("./imgs/" + dbFilename["ProfilePic"])
+            os.remove(userProfilePicPath + dbFilename["ProfilePic"])
         except FileNotFoundError:
             None
     filename = file.filename.split('.')
     if filename[len(filename) - 1] in ext:
         filename = decoded["Emailaddr"] + "." + filename[len(filename) - 1]
-        f = open("./imgs/" + filename, 'wb')
+        f = open(userProfilePicPath + filename, 'wb')
         shutil.copyfileobj(file.file, f)
         f.close()
         mydb.updateUserProfilePic(filename, decoded["Emailaddr"])
@@ -128,7 +132,7 @@ async def user_deleteProfilePic(Authorization: Optional[str] = Header(None)):
     decoded = decodeJWT(token)
     dbFilename = mydb.getDBUserData(decoded["Emailaddr"])
     if dbFilename["ProfilePic"] is not None:
-        os.remove("./imgs/" + dbFilename["ProfilePic"])
+        os.remove(userProfilePicPath + dbFilename["ProfilePic"])
         mydb.updateUserProfilePic("NULL", decoded["Emailaddr"])
         item = {
             "message": "ProfilePic removed"
@@ -193,7 +197,7 @@ async def user_delete(Authorization: Optional[str] = Header(None), user: UserSig
     deletion = mydb.deleteUser(decoded["Emailaddr"])
 
     if dbuser["ProfilePic"] is not None:
-        os.remove("./imgs/" + dbuser["ProfilePic"])
+        os.remove(userProfilePicPath + dbuser["ProfilePic"])
 
     if not deletion:
         item = {
@@ -323,13 +327,65 @@ async def team_deleteTeam(Authorization: Optional[str] = Header(None)):
 
 
 @app.get("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
-async def team_getProfilePic(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
-    return
+async def team_getProfilePic(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] != None:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        if dbteam["ProfilePic"] == None:
+            item = {
+                "message": "Team does not have ProfilePic"
+            }
+            return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+        else:
+            print("\033[32m" + "FILE" + "\033[0m", end=':     ')
+            print("File read -> " + dbteam["ProfilePic"])
+            path = teamProfilePicPath + dbteam["ProfilePic"]
+            return FileResponse(path=path, filename=dbteam["ProfilePic"])
+    else:
+        item = {
+            "message": "There is no Team with you"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
 
 
 @app.post("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
-async def team_postProfilePic(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
-    return
+async def team_postProfilePic(file: UploadFile, Authorization: Optional[str] = Header(None)):
+    ext = ["jpg", "JPG", "PNG", "png"]
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    dbteam = mydb.getTeambyId(dbuser["Team"])
+    if dbteam != None:
+        if dbuser["id"] == dbteam["Owner"]:
+            if dbteam["ProfilePic"] is not None:
+                try:
+                    os.remove(teamProfilePicPath + dbteam["ProfilePic"])
+                except FileNotFoundError:
+                    None
+            filename = file.filename.split('.')
+            if filename[len(filename) - 1] in ext:
+                filename = str(dbteam["id"]) + \
+                    "." + filename[len(filename) - 1]
+                f = open(teamProfilePicPath + filename, 'wb')
+                shutil.copyfileobj(file.file, f)
+                f.close()
+                if mydb.updateTeamProfilePic(filename, dbteam["id"]):
+                    print("\033[32m" + "FILE" + "\033[0m", end=':     ')
+                    print("File written -> team " + filename)
+                    item = {
+                        "message": "file uploaded"
+                    }
+                    return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)
+                else:
+                    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                item = {
+                    "message": "profilePic must .jpg or .png"
+                }
+                return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+
 
 @app.delete("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):

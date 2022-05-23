@@ -275,6 +275,17 @@ class DB:
         else:
             return False
 
+    def _updateTeamProfilePic(self, filename: str, teamId: int):
+        if self._conn.open:
+            self._sql = "UPDATE Team SET ProfilePic = '" + \
+                filename + "' WHERE id = " + str(teamId)
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
     def getUserData(self, user: str):
         if self._connectDB():
             dbUser = self._getUserByEmail(user)
@@ -438,3 +449,7 @@ class DB:
                 return False
         else:
             return False
+
+    def updateTeamProfilePic(self, filename: str, teamId: int):
+        if self._connectDB():
+            return self._updateTeamProfilePic(filename, teamId)
