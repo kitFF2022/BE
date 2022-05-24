@@ -277,12 +277,20 @@ class DB:
 
     def _updateTeamProfilePic(self, filename: str, teamId: int):
         if self._conn.open:
-            self._sql = "UPDATE Team SET ProfilePic = '" + \
-                filename + "' WHERE id = " + str(teamId)
-            self._cur.execute(self._sql)
-            self._conn.commit()
-            self._conn.close()
-            return True
+            if filename is None:
+                self._sql = "UPDATE Team SET ProfilePic = NULL WHERE id = " + \
+                    str(teamId)
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
+                return True
+            else:
+                self._sql = "UPDATE Team SET ProfilePic = '" + \
+                    filename + "' WHERE id = " + str(teamId)
+                self._cur.execute(self._sql)
+                self._conn.commit()
+                self._conn.close()
+                return True
         else:
             return False
 
