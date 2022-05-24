@@ -363,7 +363,10 @@ async def team_postProfilePic(file: UploadFile, Authorization: Optional[str] = H
                 try:
                     os.remove(teamProfilePicPath + dbteam["ProfilePic"])
                 except FileNotFoundError:
-                    None
+                    item = {
+                        "message": "ProfilePic was not found in server disk"
+                    }
+                    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
             filename = file.filename.split('.')
             if filename[len(filename) - 1] in ext:
                 filename = str(dbteam["id"]) + \
