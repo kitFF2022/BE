@@ -418,7 +418,6 @@ async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
             "message": "you are not Owner of Team"
         }
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
-    return
 
 
 @app.get("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
