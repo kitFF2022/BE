@@ -445,32 +445,32 @@ async def team_deleteMember(Authorization: Optional[str] = Header(None)):
 
 
 @app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_postproject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def project_postproject(Authorization: Optional[str] = Header(None)):
     return
 
 
 @app.put("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_putproject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def project_putproject(Authorization: Optional[str] = Header(None)):
     return
 
 
 @app.delete("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_deleteProject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def project_deleteProject(Authorization: Optional[str] = Header(None)):
     return
 
 
 @app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def object_postTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_postTeam(Authorization: Optional[str] = Header(None)):
     return
 
 
 @app.put("/object/update", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def object_putTeam(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_putTeam(Authorization: Optional[str] = Header(None)):
     return
 
 
 @app.delete("/object/delete", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def object_deleteObject(Authorization: Optional[str] = Header(None), team: Team = Body(...)):
+async def object_deleteObject(Authorization: Optional[str] = Header(None)):
     return
 
 
