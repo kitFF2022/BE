@@ -1,3 +1,4 @@
+from optparse import Option
 from os import access
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -421,6 +422,11 @@ async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
             "message": "you are not Owner of Team"
         }
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+
+
+@app.get("/user/Search/{user_email}")
+async def user_searchByEmail(user_email: str, Authorization: Optional[str] = Header(None)):
+    return
 
 
 @app.get("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
