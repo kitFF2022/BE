@@ -389,11 +389,24 @@ async def team_postProfilePic(file: UploadFile, Authorization: Optional[str] = H
 
 @app.delete("/team/profilePic", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
-    decoded = Authorization[7:]
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
     dbteam = mydb.getTeambyId(dbuser["Team"])
     if dbuser["id"] == dbteam["Owner"]:
+        if dbteam["ProfilePic"] is None:
+            item = {
+                "message": "There is no ProfilePic for Team"
+            }
+            return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
         if mydb.updateTeamProfilePic(None, dbteam["id"]):
+            try:
+                os.remove(teamProfilePicPath + dbteam["ProfilePic"])
+            except FileNotFoundError:
+                item = {
+                    "message": "ProfilePic was not found in server disk"
+                }
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
             item = {
                 "message": "profilePic removed"
             }
