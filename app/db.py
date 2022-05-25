@@ -294,6 +294,15 @@ class DB:
         else:
             return False
 
+    def _getUserSearchedByEmail(self, email: str):
+        if self._conn.open:
+            self._sql = "SELECT * FROM User WHERE Emailaddr LIKE '%" + email + "%' LIMIT 5"
+            self._cur.execute(self._sql)
+            data = self._cur.fetchall()
+            return data
+        else:
+            return None
+
     def getUserData(self, user: str):
         if self._connectDB():
             dbUser = self._getUserByEmail(user)
@@ -461,3 +470,19 @@ class DB:
     def updateTeamProfilePic(self, filename: str, teamId: int):
         if self._connectDB():
             return self._updateTeamProfilePic(filename, teamId)
+
+    def getUserSearchedByEmail(self, email: str):
+        if self._connectDB():
+            res = self._getUserSearchedByEmail(email)
+            data = []
+            if res is not None:
+                for item in res:
+                    temp = {
+                        "Name": item[1],
+                        "Nickname": item[3],
+                        "Emailaddr": item[4]
+                    }
+                    data.append(temp)
+                return data
+        else:
+            return None

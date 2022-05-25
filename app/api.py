@@ -424,9 +424,13 @@ async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
 
 
-@app.get("/user/Search/{user_email}")
+@app.get("/user/Search/email/{user_email}")
 async def user_searchByEmail(user_email: str, Authorization: Optional[str] = Header(None)):
-    return
+    data = mydb.getUserSearchedByEmail(user_email)
+    item = {
+        "message": data
+    }
+    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
 
 
 @app.get("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
