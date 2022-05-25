@@ -483,6 +483,6 @@ class DB:
                         "Emailaddr": item[4]
                     }
                     data.append(temp)
-                return data
+                return True, data
         else:
-            return None
+            return False, None

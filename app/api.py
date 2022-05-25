@@ -424,13 +424,19 @@ async def team_deleteProfilePic(Authorization: Optional[str] = Header(None)):
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
 
 
-@app.get("/user/Search/email/{user_email}")
+@app.get("/user/search/email/{user_email}", dependencies=[Depends(JWTBearer())], tags={"user"}, response_model=resMess)
 async def user_searchByEmail(user_email: str, Authorization: Optional[str] = Header(None)):
-    data = mydb.getUserSearchedByEmail(user_email)
-    item = {
-        "message": data
-    }
-    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    res, data = mydb.getUserSearchedByEmail(user_email)
+    if res:
+        item = {
+            "message": data
+        }
+        return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+    else:
+        item = {
+            "message": "DB might be dead T.T"
+        }
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
 @app.get("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
