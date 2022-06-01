@@ -1,3 +1,4 @@
+from codecs import strict_errors
 from optparse import Option
 from os import access
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
@@ -452,6 +453,46 @@ async def team_addMember(Authorization: Optional[str] = Header(None)):
 @app.delete("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_deleteMember(Authorization: Optional[str] = Header(None)):
     return
+
+
+@app.get("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_getproject(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        projects = mydb.getProjectByTeamId(dbteam["id"])
+        if projects[0]:
+            item = {
+                "message": projects[1]
+            }
+            return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+        else:
+            item = {
+                "message": "DB might be dead T.T"
+            }
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
+
+
+@app.get("/project/{projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_getProjectByProjectId(projectId: int, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        # todo project = mydb.getProjectByProjectId(projectId)
 
 
 @app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)

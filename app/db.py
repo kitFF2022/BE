@@ -299,9 +299,18 @@ class DB:
             self._sql = "SELECT * FROM User WHERE Emailaddr LIKE '%" + email + "%' LIMIT 5"
             self._cur.execute(self._sql)
             data = self._cur.fetchall()
+            self._conn.close()
             return data
         else:
             return None
+
+    def _getProjectByTeamId(self, teamId):
+        if self._conn.open:
+            self._sql = "SELECT * FROM Project WHERE Owner = " + str(teamId)
+            self._cur.execute(self._sql)
+            rows = self._cur.fetchall()
+            self._conn.close()
+            return rows
 
     def getUserData(self, user: str):
         if self._connectDB():
@@ -484,5 +493,12 @@ class DB:
                     }
                     data.append(temp)
             return True, data
+        else:
+            return False, None
+
+    def getProjectByTeamId(self, teamId: int):
+        if self._connectDB():
+            res = self._getProjectByTeamId(teamId)
+            return True, res
         else:
             return False, None
