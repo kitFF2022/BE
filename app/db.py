@@ -328,12 +328,23 @@ class DB:
     def _createProject(self, project: Project, ownerTeamId: int):
         if self._conn.open:
             self._sql = "INSERT INTO Project(Name, Owner) VALUES('" + \
-                project.Name + "', " + str(ownerTeamId) + ")"
+                project.Name + "', '" + str(ownerTeamId) + "')"
             self._cur.execute(self._sql)
             self._conn.commit()
             self._conn.close()
             return True
         return False
+
+    def _PutDataToProject(self, projectId: int, dataPath: str):
+        if self._conn.open:
+            self._sql = "UPDATE Project SET Data = '" + \
+                dataPath + "' WHERE id = " + str(projectId)
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
 
     def getUserData(self, user: str):
         if self._connectDB():
@@ -522,13 +533,12 @@ class DB:
     def getProjectByTeamId(self, teamId: int):
         if self._connectDB():
             res = self._getProjectByTeamId(teamId)
-            team = self.getTeambyId(teamId)
             data = []
             for item in res:
                 temp = {
                     "id": item[0],
                     "Name": item[1],
-                    "Owner": team["Name"],
+                    "Owner": item[2],
                     "Data": item[3],
                     "ProfilePic": item[4]
                 }
@@ -540,15 +550,17 @@ class DB:
     def getProjectByProjectId(self, projectId: int):
         if self._connectDB():
             res = self._getProjectByProjectId(projectId)
-            team = self.getTeambyId(res[2])
-            res = {
-                "id": res[0],
-                "Name": res[1],
-                "Owner": team["Name"],
-                "Data": res[3],
-                "ProfilePic": res[4]
-            }
-            return True, res
+            if res != None:
+                res = {
+                    "id": res[0],
+                    "Name": res[1],
+                    "Owner": res[2],
+                    "Data": res[3],
+                    "ProfilePic": res[4]
+                }
+                return True, res
+            else:
+                return True, None
         else:
             return False, None
 
@@ -560,3 +572,8 @@ class DB:
                 return 2
         else:
             return 3
+
+    def PutDataToProject(self, projectId: int, dataPath: str):
+        if self._connectDB():
+            if self._PutDataToProject(projectId, dataPath):
+                r

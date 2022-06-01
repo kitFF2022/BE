@@ -14,13 +14,15 @@ from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
 import shutil
 import os
+import json
 
 app = FastAPI(debug=False)
 mydb = DB()
 
-baseFilePath = "./imgs/"
+baseFilePath = "./files/"
 userProfilePicPath = baseFilePath + "user/"
 teamProfilePicPath = baseFilePath + "team/"
+projectDataPath = baseFilePath + "project/data/"
 
 origins = ["172.17.0.1", "http://localhost", "http://localhost:3000",
            "http://localhost:8000", "http://localhost:8080",
@@ -469,13 +471,16 @@ async def project_getproject(Authorization: Optional[str] = Header(None)):
     else:
         dbteam = mydb.getTeambyId(dbuser["Team"])
         projects = mydb.getProjectByTeamId(dbteam["id"])
+
         if projects[0]:
             if len(projects[1]) == 0:
                 item = {
                     "message": "your team has no project"
                 }
-                return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+                return JSONResponse(status_code=status.HTTP_410_GONE, content=item)
             else:
+                for pj in projects[1]:
+                    pj["Owner"] = dbteam["Name"]
                 item = {
                     "message": projects[1]
                 }
@@ -487,7 +492,7 @@ async def project_getproject(Authorization: Optional[str] = Header(None)):
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
-@app.get("/project/{projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+@app.get("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_getProjectByProjectId(projectId: int, Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
@@ -500,16 +505,24 @@ async def project_getProjectByProjectId(projectId: int, Authorization: Optional[
     else:
         dbteam = mydb.getTeambyId(dbuser["Team"])
         project = mydb.getProjectByProjectId(projectId)
-        if project["Owner"] == dbteam["id"]:
-            item = {
-                "message": project
-            }
-            return JSONResponse(sttus_code=status.HTTP_200_OK, content=item)
-        else:
-            item = {
-                "message": "your team is not Owned this project"
-            }
-            return JSONResponse(sttus_code=status.HTTP_409_CONFLICT, content=item)
+        if project[0]:
+            if project[1] != None:
+                if project[1]["Owner"] == dbteam["id"]:
+                    project[1]["Owner"] = dbteam["Name"]
+                    item = {
+                        "message": project[1]
+                    }
+                    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                else:
+                    item = {
+                        "message": "your team is not owner of this project"
+                    }
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=item)
+            else:
+                item = {
+                    "message": "there is no project"
+                }
+                return JSONResponse(status_code=status.HTTP_410_GONE, content=item)
 
 
 @app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
@@ -537,13 +550,45 @@ async def project_postproject(Authorization: Optional[str] = Header(None), proje
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
-@app.put("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_putproject(Authorization: Optional[str] = Header(None)):
-    return
+@app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_putproject(projectId: int, Authorization: Optional[str] = Header(None), projectData: json = Body(...)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbTeam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                item = {
+                    "message": "there is no project"
+                }
+                return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+            else:
+                if project[1]["Owner"] == dbTeam["id"]:
+                    dataPath = projectDataPath + \
+                        str(project[1]["id"]) + ".json"
+                    f = open(dataPath, 'w')
+                    f.write(projectData)
+                    f.close()
+                    if mydb.PutDataToProject(project[1]["id"], dataPath):
+                        item = {
+                            "message": "project data uploaded"
+                        }
+                        return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                    else:
+                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
 
 
-@app.delete("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_deleteProject(Authorization: Optional[str] = Header(None)):
+@app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_deleteProject(projedctId: int, Authorization: Optional[str] = Header(None)):
     return
 
 
@@ -562,7 +607,7 @@ async def object_deleteObject(Authorization: Optional[str] = Header(None)):
     return
 
 
-@app.get("/TEST/DB/DROPTABLE", tags=["TEST"], response_model=resMess)
+@app.delete("/TEST/DB/DROPTABLE", tags=["TEST"], response_model=resMess)
 async def test_DropTable():
     if mydb.WarnTestDelAllTableData():
         item = {
