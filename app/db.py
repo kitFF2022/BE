@@ -325,10 +325,10 @@ class DB:
         else:
             return None
 
-    def _createProject(self, project: Project):
+    def _createProject(self, project: Project, ownerTeamId: int):
         if self._conn.open:
-            self._sql = "INSERT INTO Project(Name) VALUES('" + \
-                project.Name + "')"
+            self._sql = "INSERT INTO Project(Name, Owner) VALUES('" + \
+                project.Name + "', " + str(ownerTeamId) + ")"
             self._cur.execute(self._sql)
             self._conn.commit()
             self._conn.close()
@@ -522,12 +522,13 @@ class DB:
     def getProjectByTeamId(self, teamId: int):
         if self._connectDB():
             res = self._getProjectByTeamId(teamId)
+            team = self.getTeambyId(teamId)
             data = []
             for item in res:
                 temp = {
                     "id": item[0],
                     "Name": item[1],
-                    "Owner": item[2],
+                    "Owner": team["Name"],
                     "Data": item[3],
                     "ProfilePic": item[4]
                 }
@@ -539,10 +540,11 @@ class DB:
     def getProjectByProjectId(self, projectId: int):
         if self._connectDB():
             res = self._getProjectByProjectId(projectId)
+            team = self.getTeambyId(res[2])
             res = {
                 "id": res[0],
                 "Name": res[1],
-                "Owner": res[2],
+                "Owner": team["Name"],
                 "Data": res[3],
                 "ProfilePic": res[4]
             }
