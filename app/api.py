@@ -479,6 +479,14 @@ async def project_getproject(Authorization: Optional[str] = Header(None)):
             else:
                 for pj in projects[1]:
                     pj["Owner"] = dbteam["Name"]
+                    if pj["Data"] != None:
+                        pj["Data"] = str(True)
+                    else:
+                        pj["Data"] = str(False)
+                    if pj["ProfilePic"] != None:
+                        pj["ProfilePic"] = str(True)
+                    else:
+                        pj["ProfilePic"] = str(False)
                 item = {
                     "message": projects[1]
                 }
@@ -532,6 +540,14 @@ async def project_getProjectByProjectId(projectId: int, Authorization: Optional[
             if project[1] != None:
                 if project[1]["Owner"] == dbteam["id"]:
                     project[1]["Owner"] = dbteam["Name"]
+                    if project[1]["Data"] == None:
+                        project[1]["Data"] = str(False)
+                    else:
+                        project[1]["Data"] = str(True)
+                    if project[1]["ProfilePic"] == None:
+                        project[1]["ProfilePic"] = str(False)
+                    else:
+                        project[1]["ProfilePic"] = str(True)
                     item = {
                         "message": project[1]
                     }
@@ -564,9 +580,9 @@ async def project_getProjectData(projectId: int, Authorization: Optional[str] = 
             else:
                 if project[1]["Owner"] == dbteam["id"]:
                     f = open(projectDataPath + project[1]["Data"], 'r')
-                    dataStr = f.readline()
+                    data = json.load(f)
                     item = {
-                        "message": dataStr
+                        "message": str(data)
                     }
                     return JSONResponse(status_code=status.HTTP_200_OK, content=item)
                 else:
@@ -616,13 +632,13 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
             else:
                 if project[1]["Owner"] == dbTeam["id"]:
-                    dataPath = projectDataPath + \
-                        str(project[1]["id"]) + ".json"
+                    filename = str(project[1]["id"]) + ".json"
+                    dataPath = projectDataPath + filename
                     f = open(dataPath, 'w')
                     jsonData = projectData.json()
                     f.write(jsonData)
                     f.close()
-                    if mydb.PutDataToProject(project[1]["id"], dataPath):
+                    if mydb.PutDataToProject(project[1]["id"], filename):
                         item = {
                             "message": "project data uploaded"
                         }
