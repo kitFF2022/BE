@@ -1,6 +1,3 @@
-from codecs import strict_errors
-from optparse import Option
-from os import access
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -9,7 +6,7 @@ from app.db import DB
 from app.models.user import User, UserSignIn, UserUpdate
 from app.models.exModels import resMess, resSignin, resUser
 from app.models.team import Team
-from app.models.project import Project
+from app.models.project import Project, ProjectData
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
 import shutil
@@ -551,7 +548,7 @@ async def project_postproject(Authorization: Optional[str] = Header(None), proje
 
 
 @app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_putproject(projectId: int, Authorization: Optional[str] = Header(None), projectData: json = Body(...)):
+async def project_putproject(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
@@ -559,7 +556,7 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
         item = {
             "message": "you are not in any Team"
         }
-        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
     else:
         dbTeam = mydb.getTeambyId(dbuser["Team"])
         project = mydb.getProjectByProjectId(projectId)
@@ -568,19 +565,20 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
                 item = {
                     "message": "there is no project"
                 }
-                return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
             else:
                 if project[1]["Owner"] == dbTeam["id"]:
                     dataPath = projectDataPath + \
                         str(project[1]["id"]) + ".json"
                     f = open(dataPath, 'w')
-                    f.write(projectData)
+                    jsonData = projectData.json()
+                    f.write(jsonData)
                     f.close()
                     if mydb.PutDataToProject(project[1]["id"], dataPath):
                         item = {
                             "message": "project data uploaded"
                         }
-                        return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                        return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)
                     else:
                         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 else:
@@ -588,8 +586,25 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
 
 
 @app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_deleteProject(projedctId: int, Authorization: Optional[str] = Header(None)):
-    return
+async def project_deleteProject(projectId: int, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+            else:
+                if project[1]["Owner"] == dbteam["id"]:
+                    res = mydb.deleteProject(projectId)
+                    if res == 1:
+                        return JSONResponse(status_code=status.HTTP_200_OK)
+                    else:
+                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)

@@ -346,6 +346,16 @@ class DB:
         else:
             return False
 
+    def _deleteProject(self, projectId: int):
+        if self._conn.open:
+            self._sql = "DELETE FROM Project WHERE id = " + str(projectId)
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        else:
+            return False
+
     def getUserData(self, user: str):
         if self._connectDB():
             dbUser = self._getUserByEmail(user)
@@ -576,4 +586,17 @@ class DB:
     def PutDataToProject(self, projectId: int, dataPath: str):
         if self._connectDB():
             if self._PutDataToProject(projectId, dataPath):
-                r
+                return 1
+            else:
+                return 2
+        else:
+            return 3
+
+    def deleteProject(self, projectId: int):
+        if self._connectDB():
+            if self._deleteProject(projectId):
+                return 1
+            else:
+                return 2
+        else:
+            return 3
