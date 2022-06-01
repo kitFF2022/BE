@@ -470,10 +470,16 @@ async def project_getproject(Authorization: Optional[str] = Header(None)):
         dbteam = mydb.getTeambyId(dbuser["Team"])
         projects = mydb.getProjectByTeamId(dbteam["id"])
         if projects[0]:
-            item = {
-                "message": projects[1]
-            }
-            return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+            if len(projects[1]) == 0:
+                item = {
+                    "message": "your team has no project"
+                }
+                return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+            else:
+                item = {
+                    "message": projects[1]
+                }
+                return JSONResponse(status_code=status.HTTP_200_OK, content=item)
         else:
             item = {
                 "message": "DB might be dead T.T"
