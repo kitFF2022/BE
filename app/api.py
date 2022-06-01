@@ -9,6 +9,7 @@ from app.db import DB
 from app.models.user import User, UserSignIn, UserUpdate
 from app.models.exModels import resMess, resSignin, resUser
 from app.models.team import Team
+from app.models.project import Project
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
 import shutil
@@ -492,12 +493,42 @@ async def project_getProjectByProjectId(projectId: int, Authorization: Optional[
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
     else:
         dbteam = mydb.getTeambyId(dbuser["Team"])
-        # todo project = mydb.getProjectByProjectId(projectId)
+        project = mydb.getProjectByProjectId(projectId)
+        if project["Owner"] == dbteam["id"]:
+            item = {
+                "message": project
+            }
+            return JSONResponse(sttus_code=status.HTTP_200_OK, content=item)
+        else:
+            item = {
+                "message": "your team is not Owned this project"
+            }
+            return JSONResponse(sttus_code=status.HTTP_409_CONFLICT, content=item)
 
 
 @app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_postproject(Authorization: Optional[str] = Header(None)):
-    return
+async def project_postproject(Authorization: Optional[str] = Header(None), project: Project = Body(...)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbTeam = mydb.getTeambyId(dbuser["Team"])
+        res = mydb.createProject(project, dbTeam["id"])
+        if res == 1:
+            item = {
+                "message": "Project created"
+            }
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)
+        else:
+            item = {
+                "message": "DB might be dead T.T"
+            }
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
 
 
 @app.put("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)

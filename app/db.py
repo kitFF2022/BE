@@ -1,5 +1,6 @@
 from pydantic import EmailStr
 import pymysql
+from app.models.project import Project
 from app.models.user import User, UserSignIn, UserUpdate
 from app.models.team import Team
 
@@ -304,13 +305,35 @@ class DB:
         else:
             return None
 
-    def _getProjectByTeamId(self, teamId):
+    def _getProjectByTeamId(self, teamId: int):
         if self._conn.open:
             self._sql = "SELECT * FROM Project WHERE Owner = " + str(teamId)
             self._cur.execute(self._sql)
             rows = self._cur.fetchall()
             self._conn.close()
             return rows
+        else:
+            return None
+
+    def _getProjectByProjectId(self, projectId: int):
+        if self._conn.open:
+            self._sql = "SELECT * FROM Project WHERE id = " + str(projectId)
+            self._cur.execute(self._sql)
+            row = self._cur.fetchone()
+            self._conn.close()
+            return row
+        else:
+            return None
+
+    def _createProject(self, project: Project):
+        if self._conn.open:
+            self._sql = "INSERT INTO Project(Name) VALUES('" + \
+                project.Name + "')"
+            self._cur.execute(self._sql)
+            self._conn.commit()
+            self._conn.close()
+            return True
+        return False
 
     def getUserData(self, user: str):
         if self._connectDB():
@@ -499,6 +522,39 @@ class DB:
     def getProjectByTeamId(self, teamId: int):
         if self._connectDB():
             res = self._getProjectByTeamId(teamId)
+            data = []
+            for item in res:
+                temp = {
+                    "id": item[0],
+                    "Name": item[1],
+                    "Owner": item[2],
+                    "Data": item[3],
+                    "ProfilePic": item[4]
+                }
+                data.append(temp)
+            return True, data
+        else:
+            return False, None
+
+    def getProjectByProjectId(self, projectId: int):
+        if self._connectDB():
+            res = self._getProjectByProjectId(projectId)
+            res = {
+                "id": res[0],
+                "Name": res[1],
+                "Owner": res[2],
+                "Data": res[3],
+                "ProfilePic": res[4]
+            }
             return True, res
         else:
             return False, None
+
+    def createProject(self, project: Project, ownerTeamId: int):
+        if self._connectDB():
+            if self._createProject(project, ownerTeamId):
+                return 1
+            else:
+                return 2
+        else:
+            return 3
