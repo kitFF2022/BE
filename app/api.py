@@ -1,3 +1,4 @@
+from optparse import Option
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -442,17 +443,17 @@ async def user_searchByEmail(user_email: str, Authorization: Optional[str] = Hea
 
 @app.get("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_getMember(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.post("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_addMember(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.delete("/team/member", dependencies=[Depends(JWTBearer())], tags=["team"], response_model=resMess)
 async def team_deleteMember(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.get("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
@@ -482,6 +483,31 @@ async def project_getproject(Authorization: Optional[str] = Header(None)):
                     "message": projects[1]
                 }
                 return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+        else:
+            item = {
+                "message": "DB might be dead T.T"
+            }
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
+
+
+@app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_postproject(Authorization: Optional[str] = Header(None), project: Project = Body(...)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbTeam = mydb.getTeambyId(dbuser["Team"])
+        res = mydb.createProject(project, dbTeam["id"])
+        if res == 1:
+            item = {
+                "message": "Project created"
+            }
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)
         else:
             item = {
                 "message": "DB might be dead T.T"
@@ -522,29 +548,51 @@ async def project_getProjectByProjectId(projectId: int, Authorization: Optional[
                 return JSONResponse(status_code=status.HTTP_410_GONE, content=item)
 
 
-@app.post("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_postproject(Authorization: Optional[str] = Header(None), project: Project = Body(...)):
+@app.get("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_getProjectData(projectId: int, Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
     if dbuser["Team"] == None:
-        item = {
-            "message": "you are not in any Team"
-        }
-        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
     else:
-        dbTeam = mydb.getTeambyId(dbuser["Team"])
-        res = mydb.createProject(project, dbTeam["id"])
-        if res == 1:
-            item = {
-                "message": "Project created"
-            }
-            return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)
-        else:
-            item = {
-                "message": "DB might be dead T.T"
-            }
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+            else:
+                if project[1]["Owner"] == dbteam["id"]:
+                    f = open(projectDataPath + project[1]["Data"], 'r')
+                    dataStr = f.readline()
+                    item = {
+                        "message": dataStr
+                    }
+                    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                else:
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+
+
+@app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_deleteProject(projectId: int, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+            else:
+                if project[1]["Owner"] == dbteam["id"]:
+                    res = mydb.deleteProject(projectId)
+                    if res == 1:
+                        return JSONResponse(status_code=status.HTTP_200_OK)
+                    else:
+                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
@@ -585,41 +633,19 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
                     return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
 
 
-@app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_deleteProject(projectId: int, Authorization: Optional[str] = Header(None)):
-    token = Authorization[7:]
-    decoded = decodeJWT(token)
-    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
-    if dbuser["Team"] == None:
-        return JSONResponse(status_code=status.HTTP_409_CONFLICT)
-    else:
-        dbteam = mydb.getTeambyId(dbuser["Team"])
-        project = mydb.getProjectByProjectId(projectId)
-        if project[0]:
-            if project[1] == None:
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
-            else:
-                if project[1]["Owner"] == dbteam["id"]:
-                    res = mydb.deleteProject(projectId)
-                    if res == 1:
-                        return JSONResponse(status_code=status.HTTP_200_OK)
-                    else:
-                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
 async def object_postTeam(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.put("/object/update", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
 async def object_putTeam(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.delete("/object/delete", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
 async def object_deleteObject(Authorization: Optional[str] = Header(None)):
-    return
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @app.delete("/TEST/DB/DROPTABLE", tags=["TEST"], response_model=resMess)
