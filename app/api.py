@@ -8,6 +8,7 @@ from app.models.user import User, UserSignIn, UserUpdate
 from app.models.exModels import resMess, resSignin, resUser
 from app.models.team import Team
 from app.models.project import Project, ProjectData
+from app.models.object import Object
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
 import shutil
@@ -611,8 +612,8 @@ async def project_deleteProject(projectId: int, Authorization: Optional[str] = H
                         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_putproject(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
+@app.post("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_postProjectdata(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
@@ -649,9 +650,35 @@ async def project_putproject(projectId: int, Authorization: Optional[str] = Head
                     return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
 
 
-@app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
-async def object_postTeam(Authorization: Optional[str] = Header(None)):
+@app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_putProjectData(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
+    # todo: define project data structure
     return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+@app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
+async def object_postTeam(Authorization: Optional[str] = Header(None), objectData: Object = Body(...)):
+    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+    """
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        return JSONResponse(status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    else:
+        project = mydb.getProjectByProjectId(objectData.Owner)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_406_NOT_ACCEPTABLE)
+            else:
+                mydb.createObject(objectData)
+            # todo: add new item in db
+        else:
+            item = {
+                "message": "DB might be dead T.T"
+            }
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
+    """
 
 
 @app.put("/object/update", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)
