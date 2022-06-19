@@ -7,7 +7,7 @@ from app.db import DB
 from app.models.user import User, UserSignIn, UserUpdate
 from app.models.exModels import resMess, resSignin, resUser
 from app.models.team import Team
-from app.models.project import Project, ProjectData
+from app.models.project import Project, ProjectWallData, ProjectObjData
 from app.models.object import Object
 from app.auth.auth_handler import signJWT, decodeJWT
 from typing import Optional
@@ -565,6 +565,28 @@ async def project_getProjectByProjectId(projectId: int, Authorization: Optional[
                 return JSONResponse(status_code=status.HTTP_410_GONE, content=item)
 
 
+@app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_deleteProject(projectId: int, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+            else:
+                if project[1]["Owner"] == dbteam["id"]:
+                    res = mydb.deleteProject(projectId)
+                    if res == 1:
+                        return JSONResponse(status_code=status.HTTP_200_OK)
+                    else:
+                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @app.get("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_getProjectData(projectId: int, Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
@@ -590,30 +612,8 @@ async def project_getProjectData(projectId: int, Authorization: Optional[str] = 
                     return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
 
 
-@app.delete("/project/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_deleteProject(projectId: int, Authorization: Optional[str] = Header(None)):
-    token = Authorization[7:]
-    decoded = decodeJWT(token)
-    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
-    if dbuser["Team"] == None:
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
-    else:
-        dbteam = mydb.getTeambyId(dbuser["Team"])
-        project = mydb.getProjectByProjectId(projectId)
-        if project[0]:
-            if project[1] == None:
-                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
-            else:
-                if project[1]["Owner"] == dbteam["id"]:
-                    res = mydb.deleteProject(projectId)
-                    if res == 1:
-                        return JSONResponse(status_code=status.HTTP_200_OK)
-                    else:
-                        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @app.post("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_postProjectdata(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
+async def project_postProjectdata(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectWallData = Body(...)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
@@ -648,12 +648,43 @@ async def project_postProjectdata(projectId: int, Authorization: Optional[str] =
                         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 else:
                     return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+        else:
+            return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_putProjectData(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
-    # todo: define project data structure
-    return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
+    else:
+        dbTeam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                item = {
+                    "message": "there is no project"
+                }
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
+            else:
+                if project[1]["Owner"] == dbTeam["id"]:
+                    f = open(project[1]["Data"], 'a')
+                    jsonData = projectData.json()
+                    f.write(jsonData)
+                    f.close()
+                    item = {
+                        "message": "Data writen with uploaded data"
+                    }
+                    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                else:
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+        else:
+            return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @app.post("/object/create", dependencies=[Depends(JWTBearer())], tags=["object"], response_model=resMess)

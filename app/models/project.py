@@ -1,3 +1,4 @@
+from re import L
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -18,19 +19,19 @@ class Project(BaseModel):
 
 
 class Wall(BaseModel):
-    Front: List[int]
-    length: int
+    Front: List[float]
+    Length: int
 
     class Config:
         schema_extra = {
             "example": {
                 "Front": [0.0, 0.0, 0.0],
-                "length": 10
+                "Length": 10
             }
         }
 
 
-class ProjectData(BaseModel):
+class ProjectWallData(BaseModel):
     WallCount: int
     Walls: List[Wall]
 
@@ -41,19 +42,62 @@ class ProjectData(BaseModel):
                 "Walls": [
                     {
                         "Front": [0.0, 0.0, 0.0],
-                        "length": 10
+                        "Length": 10
                     },
                     {
                         "Front": [0.0, 0.0, 0.0],
-                        "length": 10
+                        "Length": 10
                     },
                     {
                         "Front": [0.0, 0.0, 0.0],
-                        "length": 10
+                        "Length": 10
                     },
                     {
                         "Front": [0.0, 0.0, 0.0],
-                        "length": 10
+                        "Length": 10
+                    }
+                ]
+            }
+        }
+
+
+class Object(BaseModel):
+    Front: List[float]
+    Scale: List[float]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "Front": [0.0, 0.0, 0.0],
+                "Scale": [0.0, 0.0, 0.0]
+            }
+        }
+
+
+class ProjectObjData(BaseModel):
+    ObjectCount: int
+    Objects: List[Object]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "ObjectCount": 4,
+                "Objects": [
+                    {
+                        "Front": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
+                    },
+                    {
+                        "Front": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
+                    },
+                    {
+                        "Front": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
+                    },
+                    {
+                        "Front": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
                     }
                 ]
             }
