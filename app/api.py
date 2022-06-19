@@ -1,4 +1,5 @@
 from optparse import Option
+import dbus
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -652,7 +653,39 @@ async def project_postProjectdata(projectId: int, Authorization: Optional[str] =
             return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-@app.put("/project/data/object/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+@app.get("/project/data/object/id={projectId]", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_getProjectObjectData(projectId: int, Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        project = mydb.getProjectByProjectId(projectId)
+        if project[0]:
+            if project[1] == None:
+                return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
+            else:
+                if project[1]["Owner"] == dbteam["id"]:
+                    try:
+                        f = open(projectDataPath +
+                                 str(project[1]["id"]) + "_object.json", 'r')
+                    except FileNotFoundError:
+                        item = {
+                            "message": "there is no object data"
+                        }
+                        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
+                    data = json.load(f)
+                    item = {
+                        "message": str(data)
+                    }
+                    return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+                else:
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+
+
+@app.post("/project/data/object/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_putProjectData(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectObjData = Body(...)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
@@ -673,12 +706,13 @@ async def project_putProjectData(projectId: int, Authorization: Optional[str] = 
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
             else:
                 if project[1]["Owner"] == dbTeam["id"]:
-                    f = open(project[1]["Data"], 'a')
-                    jsonData = projectData.json()
-                    f.write(jsonData)
-                    f.close()
+                    dataPath = projectDataPath + \
+                        str(project[1]["id"]) + "_object.json"
+                    projectData = projectData.json()
+                    f = open(dataPath, 'w')
+                    f.write(projectData)
                     item = {
-                        "message": "Data writen with uploaded data"
+                        "message": "object data updated"
                     }
                     return JSONResponse(status_code=status.HTTP_200_OK, content=item)
                 else:
