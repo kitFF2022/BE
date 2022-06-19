@@ -652,8 +652,8 @@ async def project_postProjectdata(projectId: int, Authorization: Optional[str] =
             return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-@app.put("/project/data/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
-async def project_putProjectData(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectData = Body(...)):
+@app.put("/project/data/object/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_putProjectData(projectId: int, Authorization: Optional[str] = Header(None), projectData: ProjectObjData = Body(...)):
     token = Authorization[7:]
     decoded = decodeJWT(token)
     dbuser = mydb.getDBUserData(decoded["Emailaddr"])
