@@ -458,6 +458,48 @@ async def team_deleteMember(Authorization: Optional[str] = Header(None)):
     return JSONResponse(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@app.get("/project/recent", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+async def project_getRecentProject(Authorization: Optional[str] = Header(None)):
+    token = Authorization[7:]
+    decoded = decodeJWT(token)
+    dbuser = mydb.getDBUserData(decoded["Emailaddr"])
+    if dbuser["Team"] == None:
+        item = {
+            "message": "you are not in any Team"
+        }
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=item)
+    else:
+        dbteam = mydb.getTeambyId(dbuser["Team"])
+        projects = mydb.getProjectByTeamId(dbteam["id"])
+
+        if projects[0]:
+            if len(projects[1]) == 0:
+                item = {
+                    "message": "your team has no project"
+                }
+                return JSONResponse(status_code=status.HTTP_410_GONE, content=item)
+            else:
+                for pj in projects[1]:
+                    pj["Owner"] = dbteam["Name"]
+                    if pj["Data"] != None:
+                        pj["Data"] = str(True)
+                    else:
+                        pj["Data"] = str(False)
+                    if pj["ProfilePic"] != None:
+                        pj["ProfilePic"] = str(True)
+                    else:
+                        pj["ProfilePic"] = str(False)
+                item = {
+                    "message": projects[1][len(projects[1]) - 1]
+                }
+                return JSONResponse(status_code=status.HTTP_200_OK, content=item)
+        else:
+            item = {
+                "message": "DB might be dead T.T"
+            }
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=item)
+
+
 @app.get("/project", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_getproject(Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
@@ -603,7 +645,14 @@ async def project_getProjectData(projectId: int, Authorization: Optional[str] = 
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND)
             else:
                 if project[1]["Owner"] == dbteam["id"]:
-                    f = open(projectDataPath + project[1]["Data"], 'r')
+                    f = None
+                    if project[1]["Data"] != None:
+                        f = open(projectDataPath + project[1]["Data"], 'r')
+                    else:
+                        item = {
+                            "message": "there is no data with this project"
+                        }
+                        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=item)
                     data = json.load(f)
                     item = {
                         "message": str(data)
@@ -653,7 +702,7 @@ async def project_postProjectdata(projectId: int, Authorization: Optional[str] =
             return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-@app.get("/project/data/object/id={projectId]", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
+@app.get("/project/data/object/id={projectId}", dependencies=[Depends(JWTBearer())], tags=["project"], response_model=resMess)
 async def project_getProjectObjectData(projectId: int, Authorization: Optional[str] = Header(None)):
     token = Authorization[7:]
     decoded = decodeJWT(token)

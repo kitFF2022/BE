@@ -19,14 +19,16 @@ class Project(BaseModel):
 
 
 class Wall(BaseModel):
-    Front: List[float]
-    Length: int
+    Position: List[float]
+    Rotation: List[float]
+    Scale: List[float]
 
     class Config:
         schema_extra = {
             "example": {
-                "Front": [0.0, 0.0, 0.0],
-                "Length": 10
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": [0.0, 0.0, 0.0],
+                "Scale": [0.0, 0.0, 0.0]
             }
         }
 
@@ -41,34 +43,43 @@ class ProjectWallData(BaseModel):
                 "WallCount": 4,
                 "Walls": [
                     {
-                        "Front": [0.0, 0.0, 0.0],
-                        "Length": 10
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
-                        "Length": 10
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
-                        "Length": 10
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
-                        "Length": 10
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
+                        "Scale": [0.0, 0.0, 0.0]
                     }
                 ]
             }
         }
 
 
-class Object(BaseModel):
-    Front: List[float]
+# objectId -> 0: shelf, 1: boiler, 2: waterTank, 3: CO2tank
+class ProjectObject(BaseModel):
+    objectId: int
+    Position: List[float]
+    Rotation: List[float]
     Scale: List[float]
 
     class Config:
         schema_extra = {
             "example": {
-                "Front": [0.0, 0.0, 0.0],
+                "objectId": 0,
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": [0.0, 0.0, 0.0],
                 "Scale": [0.0, 0.0, 0.0]
             }
         }
@@ -76,7 +87,7 @@ class Object(BaseModel):
 
 class ProjectObjData(BaseModel):
     ObjectCount: int
-    Objects: List[Object]
+    Objects: List[ProjectObject]
 
     class Config:
         schema_extra = {
@@ -84,19 +95,27 @@ class ProjectObjData(BaseModel):
                 "ObjectCount": 4,
                 "Objects": [
                     {
-                        "Front": [0.0, 0.0, 0.0],
+                        "objectId": 0,
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
                         "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
+                        "objectId": 1,
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
                         "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
+                        "objectId": 2,
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
                         "Scale": [0.0, 0.0, 0.0]
                     },
                     {
-                        "Front": [0.0, 0.0, 0.0],
+                        "objectId": 3,
+                        "Position": [0.0, 0.0, 0.0],
+                        "Rotation": [0.0, 0.0, 0.0],
                         "Scale": [0.0, 0.0, 0.0]
                     }
                 ]
