@@ -69,7 +69,7 @@ class DB:
     def _connectDB(self):
         try:
             self._conn = pymysql.connect(
-                host='localhost', port=3306, user='root', password='1q2w3e4r', db='FFDB', charset='utf8mb4')
+                host='172.17.0.1', port=3306, user='root', password='1q2w3e4r', db='FFDB', charset='utf8mb4')
         except pymysql.err.OperationalError:
             print("\033[31m" + "DB  " + "\033[0m", end=':     ')
             print("DB CONNECTION FAILED !!!")
