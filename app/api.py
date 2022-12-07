@@ -1,5 +1,4 @@
 from optparse import Option
-import dbus
 from fastapi import FastAPI, status, Body, Depends, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
